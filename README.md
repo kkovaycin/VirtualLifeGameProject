@@ -39,6 +39,3 @@ You are in a room with a treasure chest.
 
 Contributing
 Feel free to fork the project and submit pull requests!
-
-License
-Licensed under the MIT License.
