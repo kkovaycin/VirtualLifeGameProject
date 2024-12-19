@@ -1,0 +1,22 @@
+# Compiler
+CC = gcc
+
+# Compiler flags
+CFLAGS = -Wall -Wextra -std=c11
+
+# Source file
+SRC = virtualLife_game.c
+
+# Output executable
+OUT = virtualLife
+
+# Default rule
+all: $(OUT)
+
+# Rule to compile the program
+$(OUT): $(SRC)
+	$(CC) $(CFLAGS) -o $(OUT) $(SRC)
+
+# Clean rule to remove the compiled executable
+clean:
+	rm -f $(OUT)
