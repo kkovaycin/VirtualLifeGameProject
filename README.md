@@ -19,11 +19,13 @@ In **Virtual Life Adventure**, you navigate through different rooms, collect use
    gcc virtualLife_game.c -o virtual_life
 ## 🚀 Run the Game
 
+## 🚀 Run the Game
+
 To start the game, use the following command:
 
-  ```bash
-  ./virtual_life
----
+```bash
+./virtual_life
+
 
 Start Your Adventure: Enter your name to begin your journey into the virtual life.
 
