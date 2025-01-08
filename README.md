@@ -17,19 +17,18 @@ In **Virtual Life Adventure**, you navigate through different rooms, collect use
 1. **Compile the Game**:
    ```bash
    gcc virtualLife_game.c -o virtual_life
-## 🚀 Run the Game
 
 ## 🚀 Run the Game
 
-To start the game, use the following command:
+2. To start the game, use the following command:
 
-```bash
-./virtual_life
+  ```bash
+  ./virtual_life
 
 
 Start Your Adventure: Enter your name to begin your journey into the virtual life.
 
-## 📜 Commands
+📜 Commands
 Use the following commands to interact with the game:
 
 Move: move <direction> – Move in a specified direction (e.g., up, down, left, right).
