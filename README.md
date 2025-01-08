@@ -19,8 +19,7 @@ In **Virtual Life Adventure**, you navigate through different rooms, collect use
    gcc virtualLife_game.c -o virtual_life
 Run the Game:
 
-Copy code
- ```bash
+  ```bash
   ./virtual_life
 
 Start Your Adventure: Enter your name to begin your journey into the virtual life.
