@@ -27,7 +27,7 @@ To start the game, use the following command:
 
 Start Your Adventure: Enter your name to begin your journey into the virtual life.
 
-📜 Commands
+## 📜 Commands
 Use the following commands to interact with the game:
 
 Move: move <direction> – Move in a specified direction (e.g., up, down, left, right).
