@@ -22,6 +22,7 @@ Run the Game:
 Copy code
  ```bash
   ./virtual_life
+
 Start Your Adventure: Enter your name to begin your journey into the virtual life.
 
 📜 Commands
