@@ -25,7 +25,7 @@ In **Virtual Life Adventure**, you navigate through different rooms, collect use
   ```bash
   ./virtual_life
 
-
+## 🚀 Run the Game
 Start Your Adventure: Enter your name to begin your journey into the virtual life.
 
 📜 Commands
