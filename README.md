@@ -23,7 +23,7 @@ To start the game, use the following command:
 
 ```bash
 ./virtual_life
-
+---
 Start Your Adventure: Enter your name to begin your journey into the virtual life.
 
 📜 Commands
