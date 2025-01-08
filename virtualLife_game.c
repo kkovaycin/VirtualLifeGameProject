@@ -5,19 +5,20 @@
 #include <time.h>
 
 // Constant definitions
-#define MAX_INVENTORY 5    // Maximum 5 inventory items
 #define MAX_ROOMS 10       // Maximum 10 rooms
 #define MAX_INPUT 100      // Maximum 100 characters for user input
 #define MAX_DESC 256       // Maximum characters for room description
 #define MAX_HEALTH 100     // Maximum player health
+#define SAVE_FILE "game_save.txt"
 
 // Struct definitions
 typedef struct {
-    char name[50];                     // Player name
-    int health;                        // Player health
-    int strength;                      // Player strength
-    char inventory[MAX_INVENTORY][50]; // Player inventory
-    int inventory_count;               // Inventory count
+    char name[50];               // Player name
+    int health;                  // Player health
+    int strength;                // Player strength
+    char **inventory;            // Player inventory (dynamic allocation)
+    int inventory_count;         // Inventory count
+    int max_inventory;           // Max inventory size
 } Player;
 
 typedef struct {
@@ -35,6 +36,8 @@ time_t start_time;
 
 // Function prototypes
 void init_game();
+void load_game();
+void save_game();
 void show_prompt();
 void handle_command(char *command);
 void move_player(char *direction);
@@ -46,75 +49,25 @@ void show_health();
 void show_instructions();
 void show_play_time();
 void explore_all_rooms();
+void free_resources();
 
 // Random items
 const char *items[] = {"Health Potion", "Gold Coins", "Sword", "Shield", "Magic Ring"};
 const int num_items = 5;
 
-// Function to pick up an item and increase health by 3 points
-void pickup_item(char *item) {
-    if (strlen(rooms[current_room].item) > 0 && strcmp(rooms[current_room].item, item) == 0) {
-        if (player.inventory_count < MAX_INVENTORY) {
-            strcpy(player.inventory[player.inventory_count++], item);
-            printf("You picked up %s.\n", item);
-            rooms[current_room].item[0] = '\0';
-
-            // Increase health by 3 points, but do not exceed MAX_HEALTH
-            if (player.health + 3 <= MAX_HEALTH) {
-                player.health += 3;
-            } else {
-                player.health = MAX_HEALTH; // Cap health at MAX_HEALTH
-            }
-            printf("Your health increased by 3! Current health: %d/%d\n", player.health, MAX_HEALTH);
-        } else {
-            printf("Your inventory is full!\n");
-        }
-    } else {
-        printf("There is no %s here.\n", item);
-    }
-}
-
-
-// Function to attack a creature
-void attack_creature() {
-    if (strlen(rooms[current_room].creature) > 0) {
-        printf("You attacked the %s!\n", rooms[current_room].creature);
-        player.health -= 10;
-        printf("The %s is defeated, but you lost 10 health points.\n", rooms[current_room].creature);
-        rooms[current_room].creature[0] = '\0';
-
-        if (player.health <= 0) {
-            printf("You have succumbed to your injuries. Game over!\n");
-            exit(0);
-        }
-    } else {
-        printf("There is nothing to attack here.\n");
-    }
-}
-
-// Function to show play time
-void show_play_time() {
-    time_t end_time = time(NULL);
-    double elapsed = difftime(end_time, start_time);
-    printf("You have been playing for %.0f seconds.\n", elapsed);
-}
-
-
 // Main function
 int main() {
     char command[MAX_INPUT];
 
-    // Get player name
-    printf("Enter your name: ");
-    fgets(player.name, sizeof(player.name), stdin);
-    player.name[strcspn(player.name, "\n")] = '\0';
+    // Load game if save file exists
+    FILE *file = fopen(SAVE_FILE, "r");
+    if (file) {
+        fclose(file);
+        load_game();
+    } else {
+        init_game();
+    }
 
-    // Start time and random seed
-    start_time = time(NULL);
-    srand((unsigned int)start_time);
-
-    // Initialize the game
-    init_game();
     printf("\nWelcome, %s, to the Virtual Life Adventure!\n", player.name);
     printf("Type 'help' to see a list of commands.\n");
 
@@ -132,9 +85,15 @@ int main() {
 // Initialize the game
 void init_game() {
     // Player starting values
+    printf("Enter your name: ");
+    fgets(player.name, sizeof(player.name), stdin);
+    player.name[strcspn(player.name, "\n")] = '\0';
+
     player.health = MAX_HEALTH;
     player.strength = 10;
     player.inventory_count = 0;
+    player.max_inventory = 5;
+    player.inventory = (char **)malloc(player.max_inventory * sizeof(char *));
 
     // Room descriptions and connections
     strcpy(rooms[0].description, "You are at the entrance of a dark virtual life.");
@@ -177,8 +136,56 @@ void init_game() {
             rooms[i].item[0] = '\0';
         }
     }
+
+    start_time = time(NULL);
 }
 
+// Load game from a save file
+void load_game() {
+    FILE *file = fopen(SAVE_FILE, "r");
+    if (!file) {
+        printf("Failed to load the game. Starting a new game.\n");
+        init_game();
+        return;
+    }
+
+    fscanf(file, "%49[^"] %d %d %d", player.name, &player.health, &player.strength, &player.inventory_count);
+    player.inventory = (char **)malloc(player.inventory_count * sizeof(char *));
+    for (int i = 0; i < player.inventory_count; i++) {
+        player.inventory[i] = (char *)malloc(50 * sizeof(char));
+        fscanf(file, "%49s", player.inventory[i]);
+    }
+    fscanf(file, "%d", &current_room);
+
+    fclose(file);
+    start_time = time(NULL);
+}
+
+// Save game to a file
+void save_game() {
+    FILE *file = fopen(SAVE_FILE, "w");
+    if (!file) {
+        printf("Failed to save the game.\n");
+        return;
+    }
+
+    fprintf(file, "%s %d %d %d\n", player.name, player.health, player.strength, player.inventory_count);
+    for (int i = 0; i < player.inventory_count; i++) {
+        fprintf(file, "%s\n", player.inventory[i]);
+    }
+    fprintf(file, "%d\n", current_room);
+
+    fclose(file);
+    printf("Game saved successfully!\n");
+}
+
+// Free allocated resources
+void free_resources() {
+    for (int i = 0; i < player.inventory_count; i++) {
+        free(player.inventory[i]);
+    }
+    free(player.inventory);
+}
 
 // Show prompt with current room
 void show_prompt() {
@@ -189,8 +196,6 @@ void show_prompt() {
 void handle_command(char *command) {
     if (strncmp(command, "move", 4) == 0) {
         move_player(command + 5);
-    } else if (strcmp(command, "explore_all") == 0) {
-        explore_all_rooms();
     } else if (strcmp(command, "look") == 0) {
         look_room();
     } else if (strcmp(command, "inventory") == 0) {
@@ -201,23 +206,38 @@ void handle_command(char *command) {
         attack_creature();
     } else if (strcmp(command, "health") == 0) {
         show_health();
+    } else if (strcmp(command, "save") == 0) {
+        save_game();
+    } else if (strcmp(command, "explore_all") == 0) {
+        explore_all_rooms();
     } else if (strcmp(command, "instructions") == 0) {
         show_instructions();
-    } else if (strcmp(command, "time") == 0) {
-        show_play_time();
     } else if (strcmp(command, "exit") == 0) {
-    // Show health and inventory before exiting
-        printf("\n--- Final Game Summary ---\n");
-        show_health();
-        show_inventory();
-        show_play_time();
+        save_game();
+        free_resources();
         printf("Exiting the game. Goodbye!\n");
         exit(0);
-    } else if (strcmp(command, "help") == 0) {
-        show_instructions();
     } else {
         printf("Unknown command. Type 'help' for a list of commands.\n");
     }
+}
+
+// Show game instructions
+void show_instructions() {
+    printf("\n--- Game Instructions ---\n");
+    printf("Available commands:\n");
+    printf("- move <direction>: Move in the specified direction (up, down, left, or right).\n");
+    printf("- look: Examine the current room.\n");
+    printf("- inventory: Show your inventory.\n");
+    printf("- pickup <item>: Pick up an item in the room.\n");
+    printf("- attack: Attack a creature in the room.\n");
+    printf("- health: Check your current health.\n");
+    printf("- time: Show how long you've been playing.\n");
+    printf("- explore_all: Explore all rooms automatically.\n");
+    printf("- save: Save your game progress.\n");
+    printf("- instructions: Show these instructions again.\n");
+    printf("- exit: Quit the game.\n");
+    printf("---\n");
 }
 
 // Move the player based on direction
@@ -294,81 +314,44 @@ void show_health() {
     printf("Your health: %d/%d\n", player.health, MAX_HEALTH);
 }
 
-// Display instructions
-// Display instructions and movement details
-void show_instructions() {
-    printf("\n--- Game Instructions ---\n");
-    printf("Available commands:\n");
-    printf("- move <direction>: Move in the specified direction (up, down, left, or right).\n");
-    printf("- look: Examine the current room.\n");
-    printf("- inventory: Show your inventory.\n");
-    printf("- pickup <item>: Pick up an item in the room.\n");
-    printf("- attack: Attack a creature in the room.\n");
-    printf("- health: Check your current health.\n");
-    printf("- time: Show how long you've been playing.\n");
-    printf("- explore_all: Explore all rooms automatically.\n");
-    printf("- exit: Quit the game.\n");
-    printf("- help: Show this list of commands.\n");
+// Function to pick up an item
+void pickup_item(char *item) {
+    if (strlen(rooms[current_room].item) > 0 && strcmp(rooms[current_room].item, item) == 0) {
+        if (player.inventory_count < player.max_inventory) {
+            player.inventory[player.inventory_count] = (char *)malloc(50 * sizeof(char));
+            strcpy(player.inventory[player.inventory_count++], item);
+            printf("You picked up %s.\n", item);
+            rooms[current_room].item[0] = '\0';
 
-    printf("\n--- Room Navigation Guide ---\n");
-    printf("Use the following commands to move between rooms:\n");
-    printf("- 'move up': Move to the room above (if available).\n");
-    printf("- 'move down': Move to the room below (if available).\n");
-    printf("- 'move left': Move to the room on the left (if available).\n");
-    printf("- 'move right': Move to the room on the right (if available).\n");
-
-    printf("\n--- Room Connections ---\n");
-    printf("Here are the connections for each room:\n\n");
-
-    printf("Room 0: Entrance of a dark virtual life\n");
-    printf("  - up -> Room 1\n");
-    printf("  - right -> Room 2\n");
-    printf("  - left -> Room 4\n\n");
-
-    printf("Room 1: Damp corridor with torches\n");
-    printf("  - up -> Room 3\n");
-    printf("  - down -> Room 0\n");
-    printf("  - right -> Room 4\n\n");
-
-    printf("Room 2: Room with a treasure chest\n");
-    printf("  - up -> Room 4\n");
-    printf("  - left -> Room 0\n");
-    printf("  - right -> Room 5\n\n");
-
-    printf("Room 3: Room filled with old weapons\n");
-    printf("  - down -> Room 1\n");
-    printf("  - right -> Room 6\n\n");
-
-    printf("Room 4: Mysterious library with ancient books\n");
-    printf("  - up -> Room 6\n");
-    printf("  - down -> Room 2\n");
-    printf("  - left -> Room 1\n");
-    printf("  - right -> Room 7\n\n");
-
-    printf("Room 5: Bright hall with a magical aura\n");
-    printf("  - up -> Room 7\n");
-    printf("  - left -> Room 2\n\n");
-
-    printf("Room 6: Room filled with eerie statues\n");
-    printf("  - down -> Room 4\n");
-    printf("  - left -> Room 3\n");
-    printf("  - right -> Room 8\n\n");
-
-    printf("Room 7: Narrow corridor with flickering lights\n");
-    printf("  - down -> Room 5\n");
-    printf("  - left -> Room 4\n");
-    printf("  - right -> Room 9\n\n");
-
-    printf("Room 8: Treasure vault glowing with gold\n");
-    printf("  - up -> Room 9\n");
-    printf("  - left -> Room 6\n\n");
-
-    printf("Room 9: Final room, a dark chamber with an ominous presence\n");
-    printf("  - down -> Room 8\n");
-    printf("  - left -> Room 7\n");
-
-    printf("\nType 'look' to see details of the current room, including available directions.\n");
-    printf("--------------------------\n");
+            // Increase health by 3 points, but do not exceed MAX_HEALTH
+            if (player.health + 3 <= MAX_HEALTH) {
+                player.health += 3;
+            } else {
+                player.health = MAX_HEALTH; // Cap health at MAX_HEALTH
+            }
+            printf("Your health increased by 3! Current health: %d/%d\n", player.health, MAX_HEALTH);
+        } else {
+            printf("Your inventory is full!\n");
+        }
+    } else {
+        printf("There is no %s here.\n", item);
+    }
 }
 
+// Function to attack a creature
+void attack_creature() {
+    if (strlen(rooms[current_room].creature) > 0) {
+        printf("You attacked the %s!\n", rooms[current_room].creature);
+        player.health -= 10;
+        printf("The %s is defeated, but you lost 10 health points.\n", rooms[current_room].creature);
+        rooms[current_room].creature[0] = '\0';
 
+        if (player.health <= 0) {
+            printf("You have succumbed to your injuries. Game over!\n");
+            free_resources();
+            exit(0);
+        }
+    } else {
+        printf("There is nothing to attack here.\n");
+    }
+}
